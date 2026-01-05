@@ -9,12 +9,18 @@ app.use(cors())
 app.use(express.json())
 app.use(express.static("public"))
 
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.error("MongoDB connection error:", err))
+const PORT = process.env.PORT || 3000
 
-const User = require("./models/User")
-const Course = require("./models/Course")
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => {
+    console.error("MongoDB connection error:", err)
+    process.exit(1)
+  })
+
+const User = require("./models/user")
+const Course = require("./models/course")
 
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/login.html")
@@ -28,6 +34,17 @@ app.post("/register", async (req, res) => {
       return res.json({
         success: false,
         message: "All fields are required"
+      })
+    }
+
+    const existingUser = await User.findOne({
+      email: email.trim().toLowerCase()
+    })
+
+    if (existingUser) {
+      return res.json({
+        success: false,
+        message: "User already registered"
       })
     }
 
@@ -107,9 +124,6 @@ app.get("/users", async (req, res) => {
   }
 })
 
-const PORT = process.env.PORT || 3000
-
 app.listen(PORT, () => {
   console.log("Server running on port", PORT)
 })
-
